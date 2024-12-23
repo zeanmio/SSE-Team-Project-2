@@ -1,4 +1,18 @@
-*.log
-.venv/
+# Python
+*.pyc
+*.pyo
 __pycache__/
-.pytest_cache/
+
+# Virtual environments
+venv/
+.env
+
+# Docker
+*.log
+*.pid
+*.swp
+docker-compose.override.yml
+*.tar
+
+# Kubernetes
+*.yaml
