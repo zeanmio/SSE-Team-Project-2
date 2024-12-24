@@ -22,11 +22,19 @@ jobs:
       run: |
         az acr login --name myregistryleila
 
-    - name: Build and push Docker image
+    - name: Build and push Docker image to ACR
       run: |
         docker build -t myregistryleila.azurecr.io/flaskapp:${{ github.sha }} .
+        docker tag myregistryleila.azurecr.io/flaskapp:${{ github.sha }} myregistryleila.azurecr.io/flaskapp:latest
         docker push myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
+        docker push myregistryleila.azurecr.io/flaskapp:latest
 
     - name: Run container
       run: |
         docker run -d -p 8080:80 myregistryleila.azurecr.io/flaskapp:latest
+    
+    - name: Deploy to AKS
+      run: |
+        az aks get-credentials --resource-group sse --name sse-aks
+        kubectl set image deployment/flask-app flask-app=myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
+        kubectl rollout status deployment/flask-app
