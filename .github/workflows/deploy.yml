@@ -31,7 +31,7 @@ jobs:
 
     - name: Run container
       run: |
-        docker run -d -p 8080:80 myregistryleila.azurecr.io/flaskapp:latest
+        docker run -d -p 8080:5000 myregistryleila.azurecr.io/flaskapp:latest
     
     - name: Deploy to AKS
       run: |
