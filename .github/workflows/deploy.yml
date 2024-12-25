@@ -29,9 +29,11 @@ jobs:
         docker push myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         docker push myregistryleila.azurecr.io/flaskapp:latest
 
-    - name: Run container
+    - name: Update Secrets in Kubernetes
       run: |
-        docker run -d -p 8080:5000 myregistryleila.azurecr.io/flaskapp:latest
+          kubectl delete secret openai-secret || true
+          kubectl create secret generic openai-secret \
+            --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
     
     - name: Deploy to AKS
       run: |
