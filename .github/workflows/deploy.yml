@@ -29,10 +29,21 @@ jobs:
         docker push myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         docker push myregistryleila.azurecr.io/flaskapp:latest
 
+    - name: Get AKS Credentials
+      run: |
+        az aks get-credentials --resource-group sse --name sse-aks --overwrite-existing
+  
+    - name: Verify Kubernetes Context
+      run: |
+        kubectl cluster-info
+  
+    - name: Delete Existing Secret
+      run: |
+        kubectl delete secret openai-secret || true
+  
     - name: Update Secrets in Kubernetes
       run: |
-          kubectl create secret generic openai-secret \
-            --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        kubectl create secret generic openai-secret --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
     
     - name: Deploy to AKS
       run: |
