@@ -26,7 +26,7 @@ Open your browser and navigate to: http://localhost:5000
 docker stop $(docker ps -q)
 docker rm $(docker ps -aq)
 docker build -t flaskapp .
-docker run -d -p 8080:5000 flaskapp
+docker run -d -p 8080:5000 --env-file .env flaskapp
 ```
 Open your browser and navigate to: http://localhost:8080
 
@@ -39,4 +39,4 @@ kubectl get services
 Locate the EXTERNAL-IP of your service and access the application
 
 ## Access the Deployed Application
-The application is deployed to Kubernetes and currently accessible at the following address: http://74.179.193.183/
+The application is deployed to Kubernetes and currently accessible at the following address: http://135.234.194.94/
