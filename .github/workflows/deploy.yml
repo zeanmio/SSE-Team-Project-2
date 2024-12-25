@@ -31,7 +31,6 @@ jobs:
 
     - name: Update Secrets in Kubernetes
       run: |
-          kubectl delete secret openai-secret || true
           kubectl create secret generic openai-secret \
             --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
     
