@@ -32,10 +32,11 @@ Open your browser and navigate to: http://localhost:8080
 
 ### 4. Cloud Deployment with Kubernetes
 ```bash
+kubectl delete service flask-app-service
 kubectl apply -f deployment.yml
 kubectl get services
 ```
 Locate the EXTERNAL-IP of your service and access the application
 
 ## Access the Deployed Application
-The application is already deployed to Kubernetes and accessible at the following address: http://51.8.73.87/
+The application is deployed to Kubernetes and currently accessible at the following address: http://74.179.193.183/

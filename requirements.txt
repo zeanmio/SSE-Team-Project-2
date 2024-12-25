@@ -1,2 +1,5 @@
 Flask
 requests
+openai
+azure-identity
+azure-keyvault-secrets

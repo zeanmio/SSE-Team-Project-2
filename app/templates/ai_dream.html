@@ -3,11 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Dream</title>
+    <title>AI Dream Analysis</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Create Your AI Dream</h1>
-    <p>This is where your AI dreams come to life!</p>
-    <a href="{{ url_for('home') }}">Back to Home</a>
+    <h1>AI Dream Analyzer</h1>
+    <textarea id="userInput" rows="5" cols="50" placeholder="Enter your dream description here..."></textarea><br>
+    <button onclick="analyzeText()">Analyze</button>
+
+    <h2>Analysis Result</h2>
+    <div id="result"></div>
+
+    <script>
+        function analyzeText() {
+            const userInput = document.getElementById("userInput").value;
+
+            // Ensure user input is not empty
+            if (!userInput.trim()) {
+                document.getElementById("result").innerHTML = `<p style="color: red;">Please enter text for analysis.</p>`;
+                return;
+            }
+
+            fetch("/analyze", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ text: userInput }) // Correctly reference userInput
+            })
+                .then((response) => response.json())
+                .then(data => {
+                    if (data.analysis) {
+                        // Display the analysis in the result section
+                        document.getElementById('result').innerHTML = `<b>Analysis:</b> <p>${data.analysis}</p>`;
+                    } else {
+                        // Display the error message
+                        document.getElementById('result').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    }
+                })
+                .catch(error => {
+                    // Handle unexpected errors
+                    document.getElementById('result').innerHTML = `<p style="color: red;">Unexpected Error: ${error.message}</p>`;
+                });
+        }
+    </script>
 </body>
 </html>

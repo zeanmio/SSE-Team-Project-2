@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: myregistryleila.azurecr.io/flaskapp:v1
+        image: myregistryleila.azurecr.io/flaskapp:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
 
