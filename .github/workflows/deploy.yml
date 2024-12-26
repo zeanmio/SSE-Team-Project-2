@@ -33,12 +33,6 @@ jobs:
         docker push myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         docker push myregistryleila.azurecr.io/flaskapp:latest
 
-    # Clean Up Old Docker Images
-    - name: Clean up old images
-      run: |
-        az acr repository show-tags --name myregistryleila --repository flaskapp --orderby time_desc --query '[5:]' -o tsv | \
-        xargs -I {} az acr repository delete --name myregistryleila --repository flaskapp --tag {} --yes
-
     # Get Kubernetes Credentials
     - name: Get AKS Credentials
       run: |
