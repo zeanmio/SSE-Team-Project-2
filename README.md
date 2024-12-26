@@ -48,5 +48,5 @@ kubectl create secret generic xxx-secret --from-literal=XXX_KEY="your_key"
 kubectl get secret openai-secret -o yaml
 ```
 
-### 3. Add GitHub Actions secrets
+### 3. Add to GitHub Actions secret
 Settings -> Secrets and variables -> Actions -> New repository secret
