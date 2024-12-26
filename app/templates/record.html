@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/record.css">
+    <title>DreamCanvas Record</title>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/record">Record Dream</a>
+        <a href="/atlas">Dream Atlas</a>
+    </div>
+
+    <div class="hero-image">
+        <div class="hero-text">
+            <h1>Record and analysis Your Dreams</h1>
+            <p>Description...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <textarea id="userInput" placeholder="Enter your dream here..." rows="5" cols="50"></textarea><br>
+        <button onclick="analyzeText()">Analyse</button>
+        <div id="result"></div>
+    </div>
+
+    <footer>
+        <p>&copy; DreamCanvas</p>
+    </footer>
+
+    <script src="/static/js/record.js"></script>
+</body>
+</html>

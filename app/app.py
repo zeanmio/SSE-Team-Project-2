@@ -6,24 +6,40 @@ from dotenv import load_dotenv
 # Initialize Flask app
 app = Flask(__name__)
 
-# OpenAI API key
+# Load environment variables
 load_dotenv()
+
+# OpenAI API key
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise ValueError("OPENAI_API_KEY is not set in the environment.")
+
+# Initialize OpenAI client
 client = OpenAI(api_key=openai_api_key)
 
-# Home Page
+# -------- Routes -------- #
+
+# Login Page
 @app.route('/')
-def home():
-    return render_template('home.html')
+def login():
+    return render_template('login.html')
 
-# AI Dream Page
-@app.route('/ai-dream')
-def ai_dream():
-    return render_template('ai_dream.html')
+# Dashboard Page
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 
-# Analyze Endpoint
+# Record Dream Page
+@app.route('/record')
+def record_dream():
+    return render_template('record.html')
+
+# Dream Atlas Page
+@app.route('/atlas')
+def dream_atlas():
+    return render_template('atlas.html')
+
+# Analyze Dream Endpoint
 @app.route('/analyze', methods=['POST'])
 def analyze_text():
     data = request.json
@@ -38,7 +54,8 @@ def analyze_text():
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a professional psychologist with expertise in dream analysis. Provide a psychological interpretation of the following dream."
+                    "content": "You are a professional psychologist with expertise in dream analysis. "
+                               "Provide a psychological interpretation of the following dream."
                 },
                 {
                     "role": "user",
@@ -49,10 +66,14 @@ def analyze_text():
             temperature=0.7
         )
 
+        # Extract and format the analysis
         analysis = response.choices[0].message.content.strip().replace("**", "").replace("\n", "<br>")
         return jsonify({"analysis": analysis})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+# -------- Main -------- #
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
