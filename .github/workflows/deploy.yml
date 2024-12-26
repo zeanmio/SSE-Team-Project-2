@@ -37,16 +37,23 @@ jobs:
       run: |
         kubectl cluster-info
   
-    - name: Delete Existing Secret
-      run: |
-        kubectl delete secret openai-secret || true
-  
     - name: Update Secrets in Kubernetes
       run: |
-        kubectl create secret generic openai-secret --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        kubectl apply -f - <<EOF
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: openai-secret
+        type: Opaque
+        data:
+          OPENAI_API_KEY: $(echo -n "${{ secrets.OPENAI_API_KEY }}" | base64)
+        EOF
     
     - name: Deploy to AKS
       run: |
-        az aks get-credentials --resource-group sse --name sse-aks
         kubectl set image deployment/flask-app flask-app=myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         kubectl rollout status deployment/flask-app
+        if [ $? -ne 0 ]; then
+          echo "Deployment failed. Check Kubernetes logs for details."
+          exit 1
+        fi
