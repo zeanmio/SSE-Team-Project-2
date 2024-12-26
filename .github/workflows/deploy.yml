@@ -6,50 +6,53 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  checkout-code:
     runs-on: ubuntu-latest
-
     steps:
-    # Checkout Code
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Azure Login
+  azure-auth:
+    runs-on: ubuntu-latest
+    needs: checkout-code
+    steps:
     - name: Log in to Azure
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    # ACR Login
+  
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: azure-auth
+    steps:
     - name: Log in to ACR
       run: |
         az acr login --name myregistryleila
 
-    # Build and Push Docker Image
     - name: Build and push Docker image to ACR
       run: |
         docker build -t myregistryleila.azurecr.io/flaskapp:${{ github.sha }} .
         docker tag myregistryleila.azurecr.io/flaskapp:${{ github.sha }} myregistryleila.azurecr.io/flaskapp:latest
         docker push myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         docker push myregistryleila.azurecr.io/flaskapp:latest
-
-    # Get Kubernetes Credentials
+    
+  deploy-to-aks:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
     - name: Get AKS Credentials
       run: |
         az aks get-credentials --resource-group sse --name sse-aks --overwrite-existing
 
-    # Verify Kubernetes Context
     - name: Verify Kubernetes Context
       run: |
         kubectl cluster-info
 
-    # Update Secrets in Kubernetes
     - name: Update Secrets in Kubernetes
       run: |
         kubectl delete secret openai-secret || true
         kubectl create secret generic openai-secret --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
-    # Deploy to Kubernetes
     - name: Deploy to AKS
       run: |
         kubectl set image deployment/flask-app flask-app=myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
