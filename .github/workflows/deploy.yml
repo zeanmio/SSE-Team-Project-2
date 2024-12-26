@@ -10,18 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Checkout Code
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # Azure Login
     - name: Log in to Azure
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    # ACR Login
     - name: Log in to ACR
       run: |
         az acr login --name myregistryleila
 
+    # Build and Push Docker Image
     - name: Build and push Docker image to ACR
       run: |
         docker build -t myregistryleila.azurecr.io/flaskapp:${{ github.sha }} .
@@ -29,31 +33,30 @@ jobs:
         docker push myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         docker push myregistryleila.azurecr.io/flaskapp:latest
 
+    # Clean Up Old Docker Images
+    - name: Clean up old images
+      run: |
+        az acr repository show-tags --name myregistryleila --repository flaskapp --orderby time_desc --query '[5:]' -o tsv | \
+        xargs -I {} az acr repository delete --name myregistryleila --repository flaskapp --tag {} --yes
+
+    # Get Kubernetes Credentials
     - name: Get AKS Credentials
       run: |
         az aks get-credentials --resource-group sse --name sse-aks --overwrite-existing
-  
+
+    # Verify Kubernetes Context
     - name: Verify Kubernetes Context
       run: |
         kubectl cluster-info
-  
+
+    # Update Secrets in Kubernetes
     - name: Update Secrets in Kubernetes
       run: |
-        kubectl apply -f - <<EOF
-        apiVersion: v1
-        kind: Secret
-        metadata:
-          name: openai-secret
-        type: Opaque
-        data:
-          OPENAI_API_KEY: $(echo -n "${{ secrets.OPENAI_API_KEY }}" | base64)
-        EOF
-    
+        kubectl delete secret openai-secret || true
+        kubectl create secret generic openai-secret --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+
+    # Deploy to Kubernetes
     - name: Deploy to AKS
       run: |
         kubectl set image deployment/flask-app flask-app=myregistryleila.azurecr.io/flaskapp:${{ github.sha }}
         kubectl rollout status deployment/flask-app
-        if [ $? -ne 0 ]; then
-          echo "Deployment failed. Check Kubernetes logs for details."
-          exit 1
-        fi
