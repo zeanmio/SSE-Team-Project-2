@@ -1,7 +1,11 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, make_response
+from flask_sqlalchemy import SQLAlchemy
 from openai import OpenAI
 from dotenv import load_dotenv
+import uuid
+from datetime import datetime, timedelta
+from flask_cors import CORS
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -16,6 +20,45 @@ if not openai_api_key:
 
 # Initialize OpenAI client
 client = OpenAI(api_key=openai_api_key)
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URI")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
+
+# Initialize database
+db = SQLAlchemy(app)
+
+# -------- Models -------- #
+
+class User(db.Model):
+    uuid = db.Column(db.String(36), primary_key=True, default=str(uuid.uuid4()))
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    tokens = db.relationship('Token', backref='user', lazy=True)
+    dreams = db.relationship('Dream', backref='user', lazy=True)
+
+class Token(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(200), unique=True, nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.uuid'), nullable=False)
+    exp_dt = db.Column(db.DateTime, nullable=False)
+
+class Dream(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=True)
+    upload_dt = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.uuid'), nullable=False)
+
+# Create all tables if they don't exist
+with app.app_context():
+    db.create_all()
+
+# 配置 CORS
+CORS(app, 
+     supports_credentials=True,
+     resources={ r"/api/*": { "origins": ["http://localhost:3000", "http://127.0.0.1:5000"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type"], "expose_headers": ["Set-Cookie"], "supports_credentials": True }})
 
 # -------- Routes -------- #
 
@@ -54,8 +97,7 @@ def analyze_text():
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a professional psychologist with expertise in dream analysis. "
-                               "Provide a psychological interpretation of the following dream."
+                    "content": "You are a professional psychologist with expertise in dream analysis. Provide a psychological interpretation of the following dream."
                 },
                 {
                     "role": "user",
@@ -74,6 +116,73 @@ def analyze_text():
         return jsonify({"error": str(e)}), 500
 
 
+# -------- User Registration and Login -------- #
+
+@app.route('/api/user/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Check if the user already exists
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "User exists"}), 400
+
+    # Create new user and token
+    u = User(username=username, password=password)
+    db.session.add(u)
+    db.session.commit()
+
+    # Create a new token
+    t = str(uuid.uuid4())
+    exp = datetime.utcnow() + timedelta(days=1)
+    tk = Token(token=t, user_id=u.uuid, exp_dt=exp)
+    db.session.add(tk)
+    db.session.commit()
+
+    resp = make_response(jsonify({"msg": "Registered and logged in successfully"}), 200)
+    resp.set_cookie('token', t, httponly=True, samesite='Lax', secure=False, max_age=86400)
+    return resp
+
+@app.route('/api/user/login', methods=['POST'])
+def login_user():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Validate the user credentials
+    user = User.query.filter_by(username=username, password=password).first()
+    if not user:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    # Delete old tokens and create a new one
+    Token.query.filter_by(user_id=user.uuid).delete()
+    db.session.commit()
+
+    t = str(uuid.uuid4())
+    exp = datetime.utcnow() + timedelta(days=1)
+    tk = Token(token=t, user_id=user.uuid, exp_dt=exp)
+    db.session.add(tk)
+    db.session.commit()
+
+    resp = make_response(jsonify({"msg": "Login success"}), 200)
+    resp.set_cookie('token', t, httponly=True, samesite='Lax', secure=False, max_age=86400)
+    return resp
+
+# -------- Helper Functions -------- #
+
+def get_current_user():
+    token = request.cookies.get('token')
+    if not token:
+        return None
+    
+    tk = Token.query.filter_by(token=token).first()
+    if not tk or tk.exp_dt <= datetime.utcnow():
+        return None
+    
+    user = User.query.filter_by(uuid=tk.user_id).first()
+    return user
+
 # -------- Main -------- #
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)

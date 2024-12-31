@@ -4,27 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/css/login.css">
-    <title>DreamCanvas</title>
+    <title>DreamCanvas - Login</title>
 </head>
 <body>
-   <div class="hero-image">
+    <div class="hero-image">
         <div class="hero-text">
             <h1>Welcome to DreamCanvas</h1>
-            <p>Record and analyse your dreams.</p>
+            <p>Record and analyze your dreams.</p>
         </div>
     </div>
 
     <div class="container">
-        <p>This is the login page.</p>
-        <p>
-            <a href="/dashboard">Go to Dashboard</a><br>
-            <a href="/record">Go to Record Dream</a><br>
-            <a href="/atlas">Go to Dream Atlas</a>
-        </p>
+        <!-- Login Form -->
+        <h2>Login</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="login-username">Username</label>
+                <input type="text" id="login-username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+
+        <p>Don't have an account? <a href="javascript:void(0);" id="show-register-form">Register here</a></p>
+
+        <!-- Register Form (Initially Hidden) -->
+        <div id="register-container" style="display: none;">
+            <h2>Register</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" name="password" required>
+                </div>
+                <button type="submit">Register</button>
+            </form>
+            <p>Already have an account? <a href="javascript:void(0);" id="show-login-form">Login here</a></p>
+        </div>
+
     </div>
 
     <footer>
         <p>&copy; DreamCanvas</p>
     </footer>
+
+    <script>
+        // Show/Hide Register and Login Forms
+        document.getElementById('show-register-form').addEventListener('click', function () {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-container').style.display = 'block';
+        });
+
+        document.getElementById('show-login-form').addEventListener('click', function () {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('register-container').style.display = 'none';
+        });
+
+        // Handle Login form submission
+        document.getElementById('login-form').addEventListener('submit', function (event) {
+            event.preventDefault();  // Prevent default form submission
+
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            // Send login request via AJAX
+            fetch('/api/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: username, password: password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.msg === "Login success") {
+                    // Redirect to dashboard or another page upon successful login
+                    window.location.href = '/dashboard';
+                } else {
+                    alert(data.error || 'Login failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error during login:', error);
+                alert('An error occurred during login.');
+            });
+        });
+
+        // Handle Register form submission
+        document.getElementById('register-form').addEventListener('submit', function (event) {
+            event.preventDefault();  // Prevent default form submission
+
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+
+            // Send register request via AJAX
+            fetch('/api/user/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: username, password: password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.msg === "Registered and logged in successfully") {
+                    // Redirect to dashboard or another page upon successful registration
+                    window.location.href = '/dashboard';
+                } else {
+                    alert(data.error || 'Registration failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error during registration:', error);
+                alert('An error occurred during registration.');
+            });
+        });
+    </script>
 </body>
 </html>
