@@ -47,7 +47,7 @@ XXX_KEY=your_key
 kubectl create secret generic xxx-secret --from-literal=XXX_KEY="your_key"
 kubectl get secret xxx-secret -o yaml
 ```
-Remeber to update the deployment.yml
+Make sure to reference the Secret in both deployment.yml and deploy.yml
 
 ### 3. Add to GitHub Actions secret
 Settings -> Secrets and variables -> Actions -> New repository secret
