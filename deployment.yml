@@ -24,6 +24,11 @@ spec:
             secretKeyRef:
               name: openai-secret
               key: OPENAI_API_KEY
+        - name: SQLALCHEMY_DATABASE_URI
+          valueFrom:
+            secretKeyRef:
+              name: sqlalchemy-secret
+              key: SQLALCHEMY_DATABASE_URI
 
 ---
 apiVersion: v1

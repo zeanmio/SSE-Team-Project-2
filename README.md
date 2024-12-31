@@ -1,7 +1,7 @@
 # DreamCanvas
 
 ## Access the Deployed Application
-The application is deployed to Kubernetes and currently accessible at the following address: http://135.234.194.94/
+The application is deployed to Kubernetes and currently accessible at the following address: http://74.179.214.102/
 
 ## Prerequisites
 1. Install Docker and Docker Compose.
@@ -45,8 +45,9 @@ XXX_KEY=your_key
 ### 2. Create a Kubernetes secret
 ```bash
 kubectl create secret generic xxx-secret --from-literal=XXX_KEY="your_key"
-kubectl get secret openai-secret -o yaml
+kubectl get secret xxx-secret -o yaml
 ```
+Remeber to update the deployment.yml
 
 ### 3. Add to GitHub Actions secret
 Settings -> Secrets and variables -> Actions -> New repository secret

@@ -1,30 +1,29 @@
 import os
+import uuid
 from flask import Flask, render_template, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from openai import OpenAI
 from dotenv import load_dotenv
-import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask_cors import CORS
 
-# Initialize Flask app
+# -------- Initialize Flask app -------- #
+
 app = Flask(__name__)
+
+# -------- Configuration -------- #
 
 # Load environment variables
 load_dotenv()
-
-# OpenAI API key
 openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    raise ValueError("OPENAI_API_KEY is not set in the environment.")
+sqlalchemy_database_uri = os.getenv("SQLALCHEMY_DATABASE_URI")
+
+# Configure Flask app
+app.config['SQLALCHEMY_DATABASE_URI'] = sqlalchemy_database_uri
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize OpenAI client
 client = OpenAI(api_key=openai_api_key)
-
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URI")
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 
 # Initialize database
 db = SQLAlchemy(app)
@@ -48,17 +47,28 @@ class Dream(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text, nullable=True)
-    upload_dt = db.Column(db.DateTime, default=datetime.utcnow)
+    upload_dt = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user_id = db.Column(db.String(36), db.ForeignKey('user.uuid'), nullable=False)
 
 # Create all tables if they don't exist
 with app.app_context():
     db.create_all()
 
-# 配置 CORS
-CORS(app, 
-     supports_credentials=True,
-     resources={ r"/api/*": { "origins": ["http://localhost:3000", "http://127.0.0.1:5000"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type"], "expose_headers": ["Set-Cookie"], "supports_credentials": True }})
+# -------- CORS -------- #
+
+CORS(
+    app, 
+    supports_credentials=True,
+    resources={
+        r"/api/*": {
+            "origins": ["http://localhost:3000", "http://127.0.0.1:5000"], 
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
+            "allow_headers": ["Content-Type"], 
+            "expose_headers": ["Set-Cookie"], 
+            "supports_credentials": True
+        }
+    }
+)
 
 # -------- Routes -------- #
 
@@ -160,7 +170,7 @@ def login_user():
     db.session.commit()
 
     t = str(uuid.uuid4())
-    exp = datetime.utcnow() + timedelta(days=1)
+    exp = datetime.now(timezone.utc) + timedelta(days=1)
     tk = Token(token=t, user_id=user.uuid, exp_dt=exp)
     db.session.add(tk)
     db.session.commit()
@@ -177,7 +187,7 @@ def get_current_user():
         return None
     
     tk = Token.query.filter_by(token=token).first()
-    if not tk or tk.exp_dt <= datetime.utcnow():
+    if not tk or tk.exp_dt <= datetime.now(timezone.utc):
         return None
     
     user = User.query.filter_by(uuid=tk.user_id).first()
